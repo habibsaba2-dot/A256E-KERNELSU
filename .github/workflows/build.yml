@@ -145,7 +145,7 @@ jobs:
           print("=== ALL SUSFS PATCHES APPLIED CLEANLY ===")
           EOF
 
-      - name: Configure Defconfig and Disable Exynos RKP/KDP Protections
+      - name: Configure Defconfig and Fix TUI/Exynos Protections
         run: |
           DEFCONFIG="$KERNEL_DIR/arch/arm64/configs/s5e8825-a25xxx_defconfig"
           echo "CONFIG_KSU=y" >> $DEFCONFIG
@@ -174,6 +174,19 @@ jobs:
           sed -i 's/CONFIG_KDP_CRED=y/# CONFIG_KDP_CRED is not set/g' $DEFCONFIG
           sed -i 's/CONFIG_KDP_NS=y/# CONFIG_KDP_NS is not set/g' $DEFCONFIG
           sed -i 's/CONFIG_MODULE_SIG_FORCE=y/# CONFIG_MODULE_SIG_FORCE is not set/g' $DEFCONFIG
+
+          TEE_HDR=$(find "$KERNEL_DIR" -name "tee_client_api.h" | head -n 1)
+          if [ -n "$TEE_HDR" ]; then
+            TEE_INC_DIR=$(dirname "$TEE_HDR")
+            echo "Found tee_client_api.h at: $TEE_INC_DIR"
+            echo "ccflags-y += -I$TEE_INC_DIR" >> "$KERNEL_DIR/drivers/misc/tui/Makefile"
+          else
+            echo "tee_client_api.h not found, disabling Samsung TUI driver"
+            sed -i 's/CONFIG_SAMSUNG_TUI=y/# CONFIG_SAMSUNG_TUI is not set/g' $DEFCONFIG
+            if [ -f "$KERNEL_DIR/drivers/misc/tui/Makefile" ]; then
+              sed -i 's/^obj-/# obj-/g' "$KERNEL_DIR/drivers/misc/tui/Makefile"
+            fi
+          fi
 
           sed -i '/^CONFIG_LOCALVERSION=/d' $DEFCONFIG
           sed -i '/^CONFIG_LOCALVERSION_AUTO=/d' $DEFCONFIG
