@@ -196,8 +196,8 @@ jobs:
           export DTC_FLAGS="-@"
 
           cd "$KERNEL_DIR"
-          make O=out LOCALVERSION="$STOCK_LOCALVER" s5e8825-a25xxx_defconfig
-          make O=out LOCALVERSION="$STOCK_LOCALVER" -j$(nproc) 2>&1 | tee /tmp/a25_build.log || {
+          make O=out s5e8825-a25xxx_defconfig
+          make O=out -j$(nproc) 2>&1 | tee /tmp/a25_build.log || {
             echo "=== COMPILER ERROR SUMMARY ==="
             grep -iE "error:|fatal error:" /tmp/a25_build.log | tail -n 25
             exit 1
